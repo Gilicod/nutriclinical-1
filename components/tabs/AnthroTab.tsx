@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Patient, Anthropometry } from '../../types';
 import { Line } from 'react-chartjs-2';
-import { Plus } from 'lucide-react';
+import { Plus, Calculator, Edit2, Trash2, X, AlertTriangle } from 'lucide-react';
 
 interface Props {
   patient: Patient;
@@ -9,15 +9,20 @@ interface Props {
   readOnly: boolean;
 }
 
+const INITIAL_MEASURE = {
+  date: new Date().toISOString().split('T')[0],
+  weight: 0, height: 0, imc: 0,
+  circumference: { waist: 0, hip: 0, abdomen: 0, chest: 0, armR: 0, armL: 0, thigh: 0, calf: 0 },
+  folds: { tricipital: 0, bicipital: 0, subscapular: 0, suprailiac: 0, abdominal: 0, quadriceps: 0 },
+  notes: ''
+};
+
 export default function AnthroTab({ patient, updatePatient, readOnly }: Props) {
   const [showModal, setShowModal] = useState(false);
-  const [newMeasure, setNewMeasure] = useState<Partial<Anthropometry>>({
-      date: new Date().toISOString().split('T')[0],
-      weight: 0, height: 0, imc: 0,
-      circumference: { waist: 0, hip: 0, abdomen: 0, chest: 0, armR: 0, armL: 0, thigh: 0, calf: 0 },
-      folds: { tricipital: 0, bicipital: 0, subscapular: 0, suprailiac: 0, abdominal: 0, quadriceps: 0 },
-      notes: ''
-  });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  
+  const [newMeasure, setNewMeasure] = useState<Partial<Anthropometry>>(INITIAL_MEASURE);
 
   // Calculate IMC Helper
   const calculateIMC = (w: number, h: number) => {
@@ -26,15 +31,21 @@ export default function AnthroTab({ patient, updatePatient, readOnly }: Props) {
     return parseFloat((w / (hM * hM)).toFixed(1));
   }
 
+  // Dynamic Summation of Folds
+  const foldsSum = useMemo(() => {
+    const f = newMeasure.folds || { tricipital: 0, bicipital: 0, subscapular: 0, suprailiac: 0, abdominal: 0, quadriceps: 0 };
+    return (f.bicipital || 0) + (f.tricipital || 0) + (f.subscapular || 0) + (f.abdominal || 0) + (f.suprailiac || 0) + (f.quadriceps || 0);
+  }, [newMeasure.folds]);
+
   const handleInputChange = (field: string, val: string, nested?: string, nestedKey?: string) => {
-      const numVal = parseFloat(val) || 0;
+      const numVal = field === 'date' || field === 'notes' ? val : parseFloat(val) || 0;
       if (nested && nestedKey) {
           setNewMeasure(prev => ({
               ...prev,
               [nested]: { ...prev[nested as keyof Anthropometry] as any, [nestedKey]: numVal }
           }));
       } else {
-          const updated = { ...newMeasure, [field]: field === 'notes' || field === 'date' ? val : numVal };
+          const updated = { ...newMeasure, [field]: numVal };
           if(field === 'weight' || field === 'height') {
              updated.imc = calculateIMC(updated.weight as number, updated.height as number);
           }
@@ -42,13 +53,40 @@ export default function AnthroTab({ patient, updatePatient, readOnly }: Props) {
       }
   };
 
+  const handleEdit = (measure: Anthropometry) => {
+      setNewMeasure(measure);
+      setEditingId(measure.id);
+      setShowModal(true);
+  };
+
   const handleSave = () => {
-      const entry: Anthropometry = {
-          ...newMeasure as Anthropometry,
-          id: Date.now().toString()
-      };
-      updatePatient(patient.id, { anthropometry: [entry, ...patient.anthropometry] });
+      let updatedAnthros = [...patient.anthropometry];
+      if (editingId) {
+          updatedAnthros = updatedAnthros.map(a => a.id === editingId ? { ...newMeasure as Anthropometry, id: editingId } : a);
+      } else {
+          const entry: Anthropometry = {
+              ...newMeasure as Anthropometry,
+              id: Date.now().toString()
+          };
+          updatedAnthros = [entry, ...updatedAnthros];
+      }
+      
+      updatePatient(patient.id, { anthropometry: updatedAnthros });
+      closeModal();
+  };
+
+  const closeModal = () => {
       setShowModal(false);
+      setEditingId(null);
+      setNewMeasure(INITIAL_MEASURE);
+  };
+
+  const confirmDelete = () => {
+    if (deleteId) {
+        const updatedAnthros = patient.anthropometry.filter(a => a.id !== deleteId);
+        updatePatient(patient.id, { anthropometry: updatedAnthros });
+        setDeleteId(null);
+    }
   };
 
   // Chart Data Preparation
@@ -128,7 +166,7 @@ export default function AnthroTab({ patient, updatePatient, readOnly }: Props) {
         <div className="p-4 border-b border-slate-800 flex justify-between items-center">
             <h3 className="text-white font-bold">Registro de Medidas</h3>
             {!readOnly && (
-                <button onClick={() => setShowModal(true)} className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded text-sm border border-slate-700">
+                <button onClick={() => { setEditingId(null); setNewMeasure(INITIAL_MEASURE); setShowModal(true); }} className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded text-sm border border-slate-700 transition-colors">
                     NUEVA MEDIDA
                 </button>
             )}
@@ -142,38 +180,83 @@ export default function AnthroTab({ patient, updatePatient, readOnly }: Props) {
                         <th className="px-4 py-3">IMC</th>
                         <th className="px-4 py-3">Cintura</th>
                         <th className="px-4 py-3">Cadera</th>
-                        <th className="px-4 py-3">Brazo</th>
+                        <th className="px-4 py-3 text-right">Acciones</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
                     {patient.anthropometry.map(r => (
-                        <tr key={r.id}>
+                        <tr key={r.id} className="hover:bg-slate-800/50 transition-colors">
                             <td className="px-4 py-3">{r.date}</td>
                             <td className="px-4 py-3">{r.weight} kg</td>
                             <td className="px-4 py-3 font-bold">{r.imc}</td>
                             <td className="px-4 py-3">{r.circumference.waist}</td>
                             <td className="px-4 py-3">{r.circumference.hip}</td>
-                            <td className="px-4 py-3">{r.circumference.armR}</td>
+                            <td className="px-4 py-3 text-right">
+                                {!readOnly && (
+                                    <div className="flex justify-end gap-2">
+                                        <button onClick={() => handleEdit(r)} className="p-1.5 text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors">
+                                            <Edit2 size={16} />
+                                        </button>
+                                        <button onClick={() => setDeleteId(r.id)} className="p-1.5 text-red-400 hover:bg-red-400/10 rounded-lg transition-colors">
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                )}
+                            </td>
                         </tr>
                     ))}
+                    {patient.anthropometry.length === 0 && (
+                        <tr>
+                            <td colSpan={6} className="px-4 py-8 text-center text-slate-500 italic">No hay registros de medidas.</td>
+                        </tr>
+                    )}
                 </tbody>
             </table>
         </div>
       </div>
 
-      {/* Modal */}
+      {/* DELETE CONFIRMATION MODAL */}
+      {deleteId && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
+            <div className="bg-slate-900 border border-slate-700 rounded-xl p-8 max-w-sm w-full shadow-2xl text-center animate-in fade-in zoom-in duration-200">
+                <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6 border border-red-500/20">
+                    <AlertTriangle size={32} />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">¿Eliminar Registro?</h3>
+                <p className="text-slate-400 text-sm mb-8 leading-relaxed">
+                    Esta acción eliminará permanentemente esta medición antropométrica de la ficha del paciente.
+                </p>
+                <div className="flex gap-3 justify-center">
+                    <button 
+                    onClick={() => setDeleteId(null)} 
+                    className="px-5 py-2.5 text-slate-400 hover:text-white font-medium hover:bg-slate-800 rounded-lg transition-colors"
+                    >
+                        Cancelar
+                    </button>
+                    <button 
+                    onClick={confirmDelete} 
+                    className="bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-lg font-bold shadow-lg shadow-red-900/20 transition-all active:scale-95"
+                    >
+                        Sí, Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
+
+      {/* Modal Nueva/Editar Medida */}
       {showModal && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-              <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
+              <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
                   <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-bold text-white">Nueva Visita - Antropometría</h3>
-                    <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-white">✕</button>
+                    <h3 className="text-xl font-bold text-white">{editingId ? 'Editar Medida' : 'Nueva Visita - Antropometría'}</h3>
+                    <button onClick={closeModal} className="text-slate-400 hover:text-white transition-colors"><X size={20} /></button>
                   </div>
                   
                   <div className="space-y-6">
                       {/* Basics */}
-                      <div className="bg-slate-800/50 p-4 rounded-lg">
-                          <h4 className="text-sm font-bold text-blue-400 mb-3 uppercase">Básicos</h4>
+                      <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
+                          <h4 className="text-sm font-bold text-blue-400 mb-3 uppercase tracking-wider">Básicos</h4>
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                               <Input label="Fecha" type="date" value={newMeasure.date} onChange={v => handleInputChange('date', v)} />
                               <Input label="Peso (kg)" type="number" value={newMeasure.weight} onChange={v => handleInputChange('weight', v)} />
@@ -183,30 +266,40 @@ export default function AnthroTab({ patient, updatePatient, readOnly }: Props) {
                       </div>
 
                       {/* Circumferences */}
-                      <div className="bg-slate-800/50 p-4 rounded-lg">
-                          <h4 className="text-sm font-bold text-purple-400 mb-3 uppercase">Circunferencias (cm)</h4>
+                      <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
+                          <h4 className="text-sm font-bold text-purple-400 mb-3 uppercase tracking-wider">Circunferencias (cm)</h4>
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                               <Input label="Cintura" value={newMeasure.circumference?.waist} onChange={v => handleInputChange('circumference', v, 'circumference', 'waist')} />
                               <Input label="Cadera" value={newMeasure.circumference?.hip} onChange={v => handleInputChange('circumference', v, 'circumference', 'hip')} />
                               <Input label="Abdomen" value={newMeasure.circumference?.abdomen} onChange={v => handleInputChange('circumference', v, 'circumference', 'abdomen')} />
                               <Input label="Pecho" value={newMeasure.circumference?.chest} onChange={v => handleInputChange('circumference', v, 'circumference', 'chest')} />
                               <Input label="Brazo Der" value={newMeasure.circumference?.armR} onChange={v => handleInputChange('circumference', v, 'circumference', 'armR')} />
+                              <Input label="Brazo Izq" value={newMeasure.circumference?.armL} onChange={v => handleInputChange('circumference', v, 'circumference', 'armL')} />
                               <Input label="Muslo" value={newMeasure.circumference?.thigh} onChange={v => handleInputChange('circumference', v, 'circumference', 'thigh')} />
+                              <Input label="Pantorrilla" value={newMeasure.circumference?.calf} onChange={v => handleInputChange('circumference', v, 'circumference', 'calf')} />
                           </div>
                       </div>
 
                       {/* Folds */}
-                      <div className="bg-slate-800/50 p-4 rounded-lg">
-                          <h4 className="text-sm font-bold text-orange-400 mb-3 uppercase">Pliegues (mm)</h4>
+                      <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700 relative">
+                          <div className="flex justify-between items-center mb-3">
+                              <h4 className="text-sm font-bold text-orange-400 uppercase tracking-wider">Pliegues (mm)</h4>
+                              <div className="bg-orange-500/10 text-orange-400 px-3 py-1 rounded-full text-xs font-bold border border-orange-500/20 flex items-center gap-2">
+                                  <Calculator size={12} /> Σ6 pliegues: {foldsSum.toFixed(1)} mm
+                              </div>
+                          </div>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                              <Input label="Bicipital" value={newMeasure.folds?.bicipital} onChange={v => handleInputChange('folds', v, 'folds', 'bicipital')} />
                               <Input label="Tricipital" value={newMeasure.folds?.tricipital} onChange={v => handleInputChange('folds', v, 'folds', 'tricipital')} />
                               <Input label="Subescapular" value={newMeasure.folds?.subscapular} onChange={v => handleInputChange('folds', v, 'folds', 'subscapular')} />
                               <Input label="Abdominal" value={newMeasure.folds?.abdominal} onChange={v => handleInputChange('folds', v, 'folds', 'abdominal')} />
+                              <Input label="Supraíliaco" value={newMeasure.folds?.suprailiac} onChange={v => handleInputChange('folds', v, 'folds', 'suprailiac')} />
+                              <Input label="Cuádriceps" value={newMeasure.folds?.quadriceps} onChange={v => handleInputChange('folds', v, 'folds', 'quadriceps')} />
                           </div>
                       </div>
 
-                      <button onClick={handleSave} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg">
-                          Guardar Medida
+                      <button onClick={handleSave} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all shadow-lg shadow-blue-900/20">
+                          {editingId ? 'Guardar Cambios' : 'Guardar Medida'}
                       </button>
                   </div>
               </div>
@@ -218,13 +311,13 @@ export default function AnthroTab({ patient, updatePatient, readOnly }: Props) {
 
 const Input = ({ label, value, onChange, type = "number", readOnly = false }: any) => (
     <div>
-        <label className="block text-xs font-bold text-slate-500 mb-1 uppercase">{label}</label>
+        <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-tighter">{label}</label>
         <input 
             type={type} 
             value={value} 
             onChange={e => onChange && onChange(e.target.value)}
             readOnly={readOnly}
-            className={`w-full bg-slate-900 border border-slate-700 rounded p-2 text-white focus:border-blue-500 outline-none ${readOnly ? 'opacity-50' : ''}`}
+            className={`w-full bg-slate-900 border border-slate-700 rounded p-2 text-white text-sm focus:border-blue-500 outline-none transition-all ${readOnly ? 'opacity-50 cursor-not-allowed bg-slate-800' : 'hover:border-slate-600'}`}
         />
     </div>
 );

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Patient, Lifestyle } from '../../types';
-import { Edit2, Coffee, Moon, Activity, DollarSign } from 'lucide-react';
+import { Edit2, Coffee, Moon, Activity, DollarSign, Utensils, ShoppingCart } from 'lucide-react';
 
 interface Props {
   patient: Patient;
@@ -35,10 +35,10 @@ export default function LifestyleTab({ patient, updatePatient, readOnly }: Props
             isEditing ? (
                 <div className="flex gap-2">
                     <button onClick={() => setIsEditing(false)} className="px-4 py-2 text-slate-400">Cancelar</button>
-                    <button onClick={handleSave} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">Guardar</button>
+                    <button onClick={handleSave} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">Guardar</button>
                 </div>
             ) : (
-                <button onClick={() => setIsEditing(true)} className="bg-slate-800 hover:bg-slate-700 text-blue-400 px-4 py-2 rounded-lg flex items-center gap-2">
+                <button onClick={() => setIsEditing(true)} className="bg-slate-800 hover:bg-slate-700 text-blue-400 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors border border-slate-700">
                     <Edit2 size={16} /> Editar
                 </button>
             )
@@ -49,7 +49,7 @@ export default function LifestyleTab({ patient, updatePatient, readOnly }: Props
         {/* Activity */}
         <Section title="Actividad Física" icon={Activity}>
             <div className="space-y-4">
-                <label className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg">
+                <label className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg cursor-pointer">
                     <input 
                         type="checkbox" 
                         checked={data.activity.regular} 
@@ -60,15 +60,15 @@ export default function LifestyleTab({ patient, updatePatient, readOnly }: Props
                     <span className="text-slate-200">Realiza Actividad Física regularmente</span>
                 </label>
                 <div>
-                    <p className="text-xs uppercase text-slate-500 font-bold mb-1">Detalles</p>
+                    <p className="text-xs uppercase text-slate-500 font-bold mb-1">Detalles de Ejercicio</p>
                     {isEditing ? (
                         <textarea 
                             value={data.activity.details}
                             onChange={e => setData({...data, activity: {...data.activity, details: e.target.value}})}
-                            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm"
+                            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:border-blue-500 outline-none transition-colors"
                         />
                     ) : (
-                        <p className="p-3 bg-slate-800 rounded-lg text-slate-300 text-sm">{data.activity.details || 'Sin detalles'}</p>
+                        <p className="p-3 bg-slate-800 rounded-lg text-slate-300 text-sm border border-slate-800">{data.activity.details || 'Sin detalles'}</p>
                     )}
                 </div>
             </div>
@@ -78,25 +78,61 @@ export default function LifestyleTab({ patient, updatePatient, readOnly }: Props
         <Section title="Sueño, Estrés y Sustancias" icon={Moon}>
             <div className="grid grid-cols-2 gap-4">
                 <div>
-                    <label className="text-xs text-slate-500 font-bold">Horas Sueño</label>
-                    <input disabled={!isEditing} value={data.sleep.hours} onChange={e => setData({...data, sleep: {...data.sleep, hours: e.target.value}})} className="w-full bg-slate-800 border-none rounded text-white text-sm mt-1 p-2" />
+                    <label className="text-xs text-slate-500 font-bold uppercase">Horas Sueño</label>
+                    <input 
+                        disabled={!isEditing} 
+                        value={data.sleep.hours} 
+                        onChange={e => setData({...data, sleep: {...data.sleep, hours: e.target.value}})} 
+                        className="w-full bg-slate-800 border border-slate-700 rounded text-white text-sm mt-1 p-2 focus:border-blue-500 outline-none transition-colors" 
+                    />
                 </div>
                 <div>
-                    <label className="text-xs text-slate-500 font-bold">Nivel Estrés</label>
-                    <input disabled={!isEditing} value={data.sleep.stress} onChange={e => setData({...data, sleep: {...data.sleep, stress: e.target.value}})} className="w-full bg-slate-800 border-none rounded text-white text-sm mt-1 p-2" />
+                    <label className="text-xs text-slate-500 font-bold uppercase">Nivel Estrés</label>
+                    {isEditing ? (
+                        <select 
+                            value={data.sleep.stress} 
+                            onChange={e => setData({...data, sleep: {...data.sleep, stress: e.target.value}})}
+                            className="w-full bg-slate-800 border border-slate-700 rounded text-white text-sm mt-1 p-2 focus:border-blue-500 outline-none transition-colors"
+                        >
+                            <option value="Bajo">Bajo</option>
+                            <option value="Medio">Medio</option>
+                            <option value="Alto">Alto</option>
+                        </select>
+                    ) : (
+                        <div className="w-full bg-slate-800 border border-slate-800 rounded text-white text-sm mt-1 p-2">
+                            {data.sleep.stress || 'No especificado'}
+                        </div>
+                    )}
                 </div>
                 <div className="col-span-2">
-                    <label className="text-xs text-slate-500 font-bold">Horarios Comida</label>
-                    <input disabled={!isEditing} value={data.diet.meals} onChange={e => setData({...data, diet: {...data.diet, meals: e.target.value}})} className="w-full bg-slate-800 border-none rounded text-white text-sm mt-1 p-2" />
+                    <label className="text-xs text-slate-500 font-bold uppercase">Horarios Comida</label>
+                    <input 
+                        disabled={!isEditing} 
+                        value={data.diet.meals} 
+                        onChange={e => setData({...data, diet: {...data.diet, meals: e.target.value}})} 
+                        className="w-full bg-slate-800 border border-slate-700 rounded text-white text-sm mt-1 p-2 focus:border-blue-500 outline-none transition-colors" 
+                    />
                 </div>
                 <div className="col-span-2 flex gap-4 mt-2">
-                    <label className="flex items-center gap-2">
-                        <input type="checkbox" disabled={!isEditing} checked={data.diet.alcohol} onChange={e => setData({...data, diet: {...data.diet, alcohol: e.target.checked}})} />
-                        <span className="text-sm text-slate-300">Alcohol</span>
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                        <input 
+                            type="checkbox" 
+                            disabled={!isEditing} 
+                            checked={data.diet.alcohol} 
+                            onChange={e => setData({...data, diet: {...data.diet, alcohol: e.target.checked}})} 
+                            className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-600"
+                        />
+                        <span className="text-sm text-slate-300 group-hover:text-white transition-colors">Consumo Alcohol</span>
                     </label>
-                    <label className="flex items-center gap-2">
-                        <input type="checkbox" disabled={!isEditing} checked={data.diet.tobacco} onChange={e => setData({...data, diet: {...data.diet, tobacco: e.target.checked}})} />
-                        <span className="text-sm text-slate-300">Tabaco</span>
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                        <input 
+                            type="checkbox" 
+                            disabled={!isEditing} 
+                            checked={data.diet.tobacco} 
+                            onChange={e => setData({...data, diet: {...data.diet, tobacco: e.target.checked}})} 
+                            className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-600"
+                        />
+                        <span className="text-sm text-slate-300 group-hover:text-white transition-colors">Consumo Tabaco</span>
                     </label>
                 </div>
             </div>
@@ -107,21 +143,62 @@ export default function LifestyleTab({ patient, updatePatient, readOnly }: Props
             <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label className="text-xs text-slate-500 font-bold">Preferencias</label>
-                        <input disabled={!isEditing} value={data.preferences.likes} onChange={e => setData({...data, preferences: {...data.preferences, likes: e.target.value}})} className="w-full bg-slate-800 border-none rounded text-white text-sm mt-1 p-2" />
+                        <label className="text-xs text-slate-500 font-bold uppercase">Preferencias</label>
+                        <input 
+                            disabled={!isEditing} 
+                            value={data.preferences.likes} 
+                            onChange={e => setData({...data, preferences: {...data.preferences, likes: e.target.value}})} 
+                            className="w-full bg-slate-800 border border-slate-700 rounded text-white text-sm mt-1 p-2 focus:border-blue-500 outline-none transition-colors" 
+                        />
                     </div>
                     <div>
-                        <label className="text-xs text-slate-500 font-bold">Aversiones</label>
-                        <input disabled={!isEditing} value={data.preferences.dislikes} onChange={e => setData({...data, preferences: {...data.preferences, dislikes: e.target.value}})} className="w-full bg-slate-800 border-none rounded text-white text-sm mt-1 p-2" />
+                        <label className="text-xs text-slate-500 font-bold uppercase">Aversiones</label>
+                        <input 
+                            disabled={!isEditing} 
+                            value={data.preferences.dislikes} 
+                            onChange={e => setData({...data, preferences: {...data.preferences, dislikes: e.target.value}})} 
+                            className="w-full bg-slate-800 border border-slate-700 rounded text-white text-sm mt-1 p-2 focus:border-blue-500 outline-none transition-colors" 
+                        />
                     </div>
                 </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="text-xs text-slate-500 font-bold uppercase">Presupuesto</label>
+                        <select 
+                            disabled={!isEditing} 
+                            value={data.preferences.budget} 
+                            onChange={e => setData({...data, preferences: {...data.preferences, budget: e.target.value as any}})} 
+                            className="w-full bg-slate-800 border border-slate-700 rounded text-white text-sm mt-1 p-2 focus:border-blue-500 outline-none transition-colors"
+                        >
+                            <option value="Bajo">Bajo</option>
+                            <option value="Medio">Medio</option>
+                            <option value="Alto">Alto</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="text-xs text-slate-500 font-bold uppercase">Acceso a Alimentos</label>
+                        <input 
+                            disabled={!isEditing} 
+                            value={data.preferences.access} 
+                            placeholder="Ej. Súper, Mercado..."
+                            onChange={e => setData({...data, preferences: {...data.preferences, access: e.target.value}})} 
+                            className="w-full bg-slate-800 border border-slate-700 rounded text-white text-sm mt-1 p-2 focus:border-blue-500 outline-none transition-colors" 
+                        />
+                    </div>
+                </div>
+
                 <div>
-                    <label className="text-xs text-slate-500 font-bold">Presupuesto</label>
-                    <select disabled={!isEditing} value={data.preferences.budget} onChange={e => setData({...data, preferences: {...data.preferences, budget: e.target.value as any}})} className="w-full bg-slate-800 border-none rounded text-white text-sm mt-1 p-2">
-                        <option>Bajo</option>
-                        <option>Medio</option>
-                        <option>Alto</option>
-                    </select>
+                    <label className="text-xs text-slate-500 font-bold uppercase flex items-center gap-1">
+                        <Utensils size={12} /> Frecuencia de comer fuera
+                    </label>
+                    <input 
+                        disabled={!isEditing} 
+                        value={data.preferences.eatingOut} 
+                        placeholder="Ej. 2 veces por semana..."
+                        onChange={e => setData({...data, preferences: {...data.preferences, eatingOut: e.target.value}})} 
+                        className="w-full bg-slate-800 border border-slate-700 rounded text-white text-sm mt-1 p-2 focus:border-blue-500 outline-none transition-colors" 
+                    />
                 </div>
             </div>
         </Section>
