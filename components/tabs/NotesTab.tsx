@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Patient, Note } from '../../types';
-import { Plus, Trash, Edit2, Image as ImageIcon, X, Upload, Calendar, Maximize2, Trash2 } from 'lucide-react';
+import { Plus, Trash, Edit2, Image as ImageIcon, X, Upload, Calendar, Maximize2, Trash2, Clock } from 'lucide-react';
 
 interface Props {
   patient: Patient;
@@ -20,6 +20,7 @@ export default function NotesTab({ patient, updatePatient, readOnly }: Props) {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [objective, setObjective] = useState('');
   const [observations, setObservations] = useState('');
+  const [nextAppointment, setNextAppointment] = useState('');
   const [images, setImages] = useState<string[]>([]); // Array of images
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -27,6 +28,7 @@ export default function NotesTab({ patient, updatePatient, readOnly }: Props) {
     setDate(new Date().toISOString().split('T')[0]);
     setObjective('');
     setObservations('');
+    setNextAppointment('');
     setImages([]);
     setEditingNoteId(null);
   };
@@ -41,6 +43,7 @@ export default function NotesTab({ patient, updatePatient, readOnly }: Props) {
     setDate(note.date);
     setObjective(note.objective);
     setObservations(note.observations);
+    setNextAppointment(note.nextAppointment || '');
     // Backward compatibility check for old 'imageUrl' field from LS
     const imgs = note.images || ((note as any).imageUrl ? [(note as any).imageUrl] : []);
     setImages(imgs);
@@ -52,7 +55,7 @@ export default function NotesTab({ patient, updatePatient, readOnly }: Props) {
       // Update existing note
       const updatedNotes = patient.notes.map(n => 
         n.id === editingNoteId 
-          ? { ...n, date, objective, observations, images }
+          ? { ...n, date, objective, observations, images, nextAppointment }
           : n
       );
       updatePatient(patient.id, { notes: updatedNotes });
@@ -63,7 +66,8 @@ export default function NotesTab({ patient, updatePatient, readOnly }: Props) {
         date,
         objective,
         observations,
-        images
+        images,
+        nextAppointment
       };
       const updatedNotes = [newNote, ...patient.notes];
       updatePatient(patient.id, { notes: updatedNotes });
@@ -138,6 +142,16 @@ export default function NotesTab({ patient, updatePatient, readOnly }: Props) {
                           <p className="text-xs uppercase text-slate-500 font-bold mb-1">OBSERVACIONES / ANÁLISIS CLÍNICO</p>
                           <p className="text-slate-300 whitespace-pre-wrap text-sm leading-relaxed">{note.observations}</p>
                       </div>
+                      {note.nextAppointment && (
+                           <div>
+                               <p className="text-xs uppercase text-green-500 font-bold mb-1 flex items-center gap-1">
+                                   <Clock size={12} /> PRÓXIMA CITA AGENDADA
+                               </p>
+                               <p className="text-green-400 font-medium text-sm">
+                                   {new Date(note.nextAppointment + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                               </p>
+                           </div>
+                      )}
                    </div>
 
                    {noteImages.length > 0 && (
@@ -253,7 +267,7 @@ export default function NotesTab({ patient, updatePatient, readOnly }: Props) {
             <div className="p-6 space-y-5 overflow-y-auto custom-scrollbar flex-1">
                 {/* Date Input */}
                 <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">FECHA</label>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">FECHA VISITA</label>
                     <div className="relative">
                         <input 
                             type="date" 
@@ -262,6 +276,22 @@ export default function NotesTab({ patient, updatePatient, readOnly }: Props) {
                             className="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" 
                         />
                         <Calendar className="absolute right-3 top-3 text-slate-400 pointer-events-none" size={18} />
+                    </div>
+                </div>
+
+                {/* Next Appointment Input */}
+                <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1">
+                        <Clock size={12} /> FECHA PRÓXIMA CITA
+                    </label>
+                    <div className="relative">
+                        <input 
+                            type="date" 
+                            value={nextAppointment} 
+                            onChange={e => setNextAppointment(e.target.value)} 
+                            className="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" 
+                        />
+                         <Calendar className="absolute right-3 top-3 text-slate-400 pointer-events-none" size={18} />
                     </div>
                 </div>
 

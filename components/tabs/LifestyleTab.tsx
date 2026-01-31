@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Patient, Lifestyle } from '../../types';
-import { Edit2, Coffee, Moon, Activity, DollarSign, Utensils, ShoppingCart } from 'lucide-react';
+import { Edit2, Coffee, Moon, Activity, DollarSign, Utensils, ShoppingCart, AlertCircle, Plus, X } from 'lucide-react';
 
 interface Props {
   patient: Patient;
@@ -27,6 +27,17 @@ export default function LifestyleTab({ patient, updatePatient, readOnly }: Props
     setIsEditing(false);
   };
 
+  const addItem = (field: 'foodAllergies' | 'foodIntolerances', value: string) => {
+      if(!value.trim()) return;
+      const currentList = data[field] || [];
+      setData({...data, [field]: [...currentList, value.trim()]});
+  };
+
+  const removeItem = (field: 'foodAllergies' | 'foodIntolerances', index: number) => {
+      const currentList = data[field] || [];
+      setData({...data, [field]: currentList.filter((_, i) => i !== index)});
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -34,7 +45,7 @@ export default function LifestyleTab({ patient, updatePatient, readOnly }: Props
         {!readOnly && (
             isEditing ? (
                 <div className="flex gap-2">
-                    <button onClick={() => setIsEditing(false)} className="px-4 py-2 text-slate-400">Cancelar</button>
+                    <button onClick={() => setIsEditing(false)} className="px-4 py-2 text-slate-400 hover:text-white transition-colors">Cancelar</button>
                     <button onClick={handleSave} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">Guardar</button>
                 </div>
             ) : (
@@ -113,27 +124,29 @@ export default function LifestyleTab({ patient, updatePatient, readOnly }: Props
                         className="w-full bg-slate-800 border border-slate-700 rounded text-white text-sm mt-1 p-2 focus:border-blue-500 outline-none transition-colors" 
                     />
                 </div>
-                <div className="col-span-2 flex gap-4 mt-2">
-                    <label className="flex items-center gap-2 cursor-pointer group">
+                
+                {/* Separated Alcohol and Tobacco */}
+                <div className="col-span-2 grid grid-cols-2 gap-4 mt-2">
+                    <div className={`p-3 rounded-lg border flex items-center justify-between ${data.diet.alcohol ? 'bg-red-500/10 border-red-500/30' : 'bg-slate-800 border-slate-700'}`}>
+                        <span className="text-sm font-bold text-slate-300">Alcohol</span>
                         <input 
                             type="checkbox" 
                             disabled={!isEditing} 
                             checked={data.diet.alcohol} 
                             onChange={e => setData({...data, diet: {...data.diet, alcohol: e.target.checked}})} 
-                            className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-600"
+                            className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-red-500 focus:ring-red-500"
                         />
-                        <span className="text-sm text-slate-300 group-hover:text-white transition-colors">Consumo Alcohol</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer group">
-                        <input 
+                    </div>
+                    <div className={`p-3 rounded-lg border flex items-center justify-between ${data.diet.tobacco ? 'bg-orange-500/10 border-orange-500/30' : 'bg-slate-800 border-slate-700'}`}>
+                         <span className="text-sm font-bold text-slate-300">Tabaco</span>
+                         <input 
                             type="checkbox" 
                             disabled={!isEditing} 
                             checked={data.diet.tobacco} 
                             onChange={e => setData({...data, diet: {...data.diet, tobacco: e.target.checked}})} 
-                            className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-600"
+                            className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-orange-500 focus:ring-orange-500"
                         />
-                        <span className="text-sm text-slate-300 group-hover:text-white transition-colors">Consumo Tabaco</span>
-                    </label>
+                    </div>
                 </div>
             </div>
         </Section>
@@ -202,7 +215,79 @@ export default function LifestyleTab({ patient, updatePatient, readOnly }: Props
                 </div>
             </div>
         </Section>
+
+        {/* New Allergies/Intolerances Section */}
+        <Section title="Alergias e Intolerancias" icon={AlertCircle}>
+            <div className="space-y-6">
+                <TagInput 
+                    label="Alergias Alimentarias" 
+                    placeholder="Ej. Cacahuates"
+                    items={Array.isArray(data.foodAllergies) ? data.foodAllergies : (data.foodAllergies ? [data.foodAllergies] : [])} 
+                    onAdd={(v) => addItem('foodAllergies', v)}
+                    onRemove={(i) => removeItem('foodAllergies', i)}
+                    isEditing={isEditing}
+                />
+                
+                <TagInput 
+                    label="Intolerancias Alimentarias" 
+                    placeholder="Ej. Lactosa"
+                    items={Array.isArray(data.foodIntolerances) ? data.foodIntolerances : (data.foodIntolerances ? [data.foodIntolerances] : [])} 
+                    onAdd={(v) => addItem('foodIntolerances', v)}
+                    onRemove={(i) => removeItem('foodIntolerances', i)}
+                    isEditing={isEditing}
+                />
+            </div>
+        </Section>
       </div>
     </div>
   );
 }
+
+const TagInput = ({ label, placeholder, items, onAdd, onRemove, isEditing }: { label: string, placeholder: string, items: string[], onAdd: (val: string) => void, onRemove: (idx: number) => void, isEditing: boolean }) => {
+    const [input, setInput] = useState('');
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if(e.key === 'Enter') {
+            e.preventDefault();
+            onAdd(input);
+            setInput('');
+        }
+    };
+
+    return (
+        <div>
+            <label className="text-xs text-slate-500 font-bold uppercase mb-2 block">{label}</label>
+            <div className="flex flex-wrap gap-2 mb-2 min-h-[40px]">
+                {items.length === 0 && !isEditing && <p className="text-sm text-slate-400 italic">Ninguna registrada.</p>}
+                {items.map((item, idx) => (
+                    <span key={idx} className="bg-slate-800 text-slate-200 text-sm px-3 py-1 rounded-full border border-slate-700 flex items-center gap-2">
+                        {item}
+                        {isEditing && (
+                            <button onClick={() => onRemove(idx)} className="text-slate-400 hover:text-red-400">
+                                <X size={14} />
+                            </button>
+                        )}
+                    </span>
+                ))}
+            </div>
+            {isEditing && (
+                <div className="flex gap-2">
+                    <input 
+                        type="text" 
+                        value={input}
+                        onChange={e => setInput(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder={placeholder}
+                        className="flex-1 bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:border-blue-500 outline-none transition-colors"
+                    />
+                    <button 
+                        onClick={() => { onAdd(input); setInput(''); }}
+                        className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white p-2 rounded-lg transition-colors"
+                    >
+                        <Plus size={20} />
+                    </button>
+                </div>
+            )}
+        </div>
+    )
+};

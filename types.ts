@@ -14,7 +14,8 @@ export interface Note {
   date: string;
   objective: string;
   observations: string;
-  images?: string[]; // Changed to array
+  images?: string[];
+  nextAppointment?: string; // New field for next appointment date
 }
 
 export interface Lifestyle {
@@ -32,8 +33,9 @@ export interface Lifestyle {
     alcohol: boolean;
     tobacco: boolean;
   };
-  // New fields from screenshot
-  bowelMovement?: string; // Estreñimiento
+  bowelMovement?: string; 
+  foodAllergies?: string[]; // Changed to array
+  foodIntolerances?: string[]; // Changed to array
   
   preferences: {
     likes: string;
@@ -76,7 +78,6 @@ export interface ClinicalHistory {
     motive: string;
     medications: string;
     familyHistory: string;
-    // New Pathological fields
     pathological?: {
       diabetes: boolean;
       cancer: boolean;
@@ -88,11 +89,11 @@ export interface ClinicalHistory {
       allergies: string;
     };
   };
-  // New Gyneco fields
   gyneco?: {
     g: string;
     p: string;
     c: string;
+    a: string;
     fum: string;
     contraception: string;
   };
@@ -103,7 +104,7 @@ export interface ClinicalHistory {
     snackPM: string;
     dinner: string;
   };
-  frequencies: Record<string, string>; // e.g., 'Verduras': 'Diario'
+  frequencies: Record<string, string>;
 }
 
 export interface Meal {
@@ -162,7 +163,6 @@ export interface Patient {
   gender: 'M' | 'F';
   occupation: string;
   
-  // New Personal Data fields
   maritalStatus?: string;
   address?: string;
 
@@ -176,8 +176,17 @@ export interface Patient {
   labs: LabResult[];
 }
 
+export interface ThemeConfig {
+  appBg: string;
+  cardBg: string;
+  textColor: string;
+  primaryColor: string;
+  fontFamily: string;
+}
+
 export interface AppState {
   currentUser: User | null;
   users: User[];
   patients: Patient[];
+  theme: ThemeConfig;
 }

@@ -100,6 +100,7 @@ export default function AnthroTab({ patient, updatePatient, readOnly }: Props) {
               data: sortedRecords.map(r => r.imc),
               borderColor: '#3b82f6',
               yAxisID: 'y',
+              maintainAspectRatio: false,
           },
           {
             label: 'Peso (kg)',
@@ -107,6 +108,7 @@ export default function AnthroTab({ patient, updatePatient, readOnly }: Props) {
             borderColor: '#10b981',
             yAxisID: 'y1',
             borderDash: [5, 5],
+            maintainAspectRatio: false,
         }
       ]
   };
@@ -114,13 +116,14 @@ export default function AnthroTab({ patient, updatePatient, readOnly }: Props) {
   const measureData = {
     labels: sortedRecords.map(r => r.date),
     datasets: [
-        { label: 'Cintura', data: sortedRecords.map(r => r.circumference.waist), borderColor: '#8b5cf6' },
-        { label: 'Cadera', data: sortedRecords.map(r => r.circumference.hip), borderColor: '#f43f5e' }
+        { label: 'Cintura', data: sortedRecords.map(r => r.circumference.waist), borderColor: '#8b5cf6', maintainAspectRatio: false },
+        { label: 'Cadera', data: sortedRecords.map(r => r.circumference.hip), borderColor: '#f43f5e', maintainAspectRatio: false }
     ]
   };
 
   const chartOptions = {
     responsive: true,
+    maintainAspectRatio: false,
     interaction: { mode: 'index' as const, intersect: false },
     plugins: { legend: { position: 'bottom' as const } },
     scales: {
@@ -134,15 +137,17 @@ export default function AnthroTab({ patient, updatePatient, readOnly }: Props) {
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* IMC Chart */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+        <div className="bg-[var(--card-bg)] border border-slate-800 rounded-xl p-4 sm:p-6">
             <h3 className="text-sm font-bold text-white mb-4">Evolución Peso vs IMC</h3>
-            <div className="h-64"><Line data={imcData} options={chartOptions} /></div>
+            <div className="h-64 w-full relative">
+                <Line data={imcData} options={chartOptions} />
+            </div>
         </div>
         
         {/* Reference Table */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+        <div className="bg-[var(--card-bg)] border border-slate-800 rounded-xl p-4 sm:p-6 overflow-x-auto">
             <h3 className="text-sm font-bold text-white mb-4">Referencia IMC (OMS)</h3>
-            <table className="w-full text-xs text-slate-300">
+            <table className="w-full text-xs text-slate-300 min-w-[200px]">
                 <thead><tr className="border-b border-slate-700"><th className="text-left py-2">Categoría</th><th className="text-right">Rango</th></tr></thead>
                 <tbody className="divide-y divide-slate-800">
                     <tr><td className="py-2 text-blue-400">Bajo Peso</td><td className="text-right text-blue-400">&lt; 18.5</td></tr>
@@ -155,24 +160,26 @@ export default function AnthroTab({ patient, updatePatient, readOnly }: Props) {
         </div>
 
         {/* Measures Chart */}
-        <div className="col-span-1 lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-6">
+        <div className="col-span-1 lg:col-span-2 bg-[var(--card-bg)] border border-slate-800 rounded-xl p-4 sm:p-6">
             <h3 className="text-sm font-bold text-white mb-4">Evolución de Medidas (cm)</h3>
-            <div className="h-64"><Line data={measureData} options={{...chartOptions, scales: { y: { grid: { color: '#1e293b' } }, x: { grid: { display: false } } }}} /></div>
+            <div className="h-64 w-full relative">
+                <Line data={measureData} options={{...chartOptions, scales: { y: { grid: { color: '#1e293b' } }, x: { grid: { display: false } } }}} />
+            </div>
         </div>
       </div>
 
       {/* Table & Action */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+      <div className="bg-[var(--card-bg)] border border-slate-800 rounded-xl overflow-hidden">
         <div className="p-4 border-b border-slate-800 flex justify-between items-center">
             <h3 className="text-white font-bold">Registro de Medidas</h3>
             {!readOnly && (
-                <button onClick={() => { setEditingId(null); setNewMeasure(INITIAL_MEASURE); setShowModal(true); }} className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded text-sm border border-slate-700 transition-colors">
+                <button onClick={() => { setEditingId(null); setNewMeasure(INITIAL_MEASURE); setShowModal(true); }} className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded text-sm border border-slate-700 transition-colors whitespace-nowrap">
                     NUEVA MEDIDA
                 </button>
             )}
         </div>
         <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left text-slate-300">
+            <table className="w-full text-sm text-left text-slate-300 whitespace-nowrap">
                 <thead className="bg-slate-800 text-xs uppercase">
                     <tr>
                         <th className="px-4 py-3">Fecha</th>
@@ -218,7 +225,7 @@ export default function AnthroTab({ patient, updatePatient, readOnly }: Props) {
       {/* DELETE CONFIRMATION MODAL */}
       {deleteId && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
-            <div className="bg-slate-900 border border-slate-700 rounded-xl p-8 max-w-sm w-full shadow-2xl text-center animate-in fade-in zoom-in duration-200">
+            <div className="bg-[var(--card-bg)] border border-slate-700 rounded-xl p-8 max-w-sm w-full shadow-2xl text-center animate-in fade-in zoom-in duration-200">
                 <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6 border border-red-500/20">
                     <AlertTriangle size={32} />
                 </div>
@@ -247,13 +254,15 @@ export default function AnthroTab({ patient, updatePatient, readOnly }: Props) {
       {/* Modal Nueva/Editar Medida */}
       {showModal && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-              <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-bold text-white">{editingId ? 'Editar Medida' : 'Nueva Visita - Antropometría'}</h3>
-                    <button onClick={closeModal} className="text-slate-400 hover:text-white transition-colors"><X size={20} /></button>
+              <div className="bg-[var(--card-bg)] border border-slate-700 rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl animate-in fade-in zoom-in duration-200">
+                  {/* Modal Header */}
+                  <div className="bg-[var(--primary)] p-4 flex justify-between items-center shrink-0 rounded-t-xl">
+                    <h3 className="text-white font-bold text-lg">{editingId ? 'Editar Medida' : 'Nueva Medida'}</h3>
+                    <button onClick={closeModal} className="text-white/80 hover:text-white transition-colors"><X size={24} /></button>
                   </div>
                   
-                  <div className="space-y-6">
+                  {/* Scrollable Body */}
+                  <div className="p-4 md:p-6 space-y-6 overflow-y-auto custom-scrollbar flex-1">
                       {/* Basics */}
                       <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
                           <h4 className="text-sm font-bold text-blue-400 mb-3 uppercase tracking-wider">Básicos</h4>
@@ -282,7 +291,7 @@ export default function AnthroTab({ patient, updatePatient, readOnly }: Props) {
 
                       {/* Folds */}
                       <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700 relative">
-                          <div className="flex justify-between items-center mb-3">
+                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
                               <h4 className="text-sm font-bold text-orange-400 uppercase tracking-wider">Pliegues (mm)</h4>
                               <div className="bg-orange-500/10 text-orange-400 px-3 py-1 rounded-full text-xs font-bold border border-orange-500/20 flex items-center gap-2">
                                   <Calculator size={12} /> Σ6 pliegues: {foldsSum.toFixed(1)} mm
@@ -297,8 +306,11 @@ export default function AnthroTab({ patient, updatePatient, readOnly }: Props) {
                               <Input label="Cuádriceps" value={newMeasure.folds?.quadriceps} onChange={v => handleInputChange('folds', v, 'folds', 'quadriceps')} />
                           </div>
                       </div>
+                  </div>
 
-                      <button onClick={handleSave} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all shadow-lg shadow-blue-900/20">
+                  {/* Footer Button */}
+                  <div className="p-4 border-t border-slate-800 bg-[var(--card-bg)] rounded-b-xl shrink-0">
+                      <button onClick={handleSave} className="w-full bg-[var(--primary)] hover:opacity-90 text-white font-bold py-3 rounded-lg transition-all shadow-lg shadow-blue-900/20">
                           {editingId ? 'Guardar Cambios' : 'Guardar Medida'}
                       </button>
                   </div>
@@ -311,13 +323,13 @@ export default function AnthroTab({ patient, updatePatient, readOnly }: Props) {
 
 const Input = ({ label, value, onChange, type = "number", readOnly = false }: any) => (
     <div>
-        <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-tighter">{label}</label>
+        <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-tighter truncate" title={label}>{label}</label>
         <input 
             type={type} 
             value={value} 
             onChange={e => onChange && onChange(e.target.value)}
             readOnly={readOnly}
-            className={`w-full bg-slate-900 border border-slate-700 rounded p-2 text-white text-sm focus:border-blue-500 outline-none transition-all ${readOnly ? 'opacity-50 cursor-not-allowed bg-slate-800' : 'hover:border-slate-600'}`}
+            className={`w-full bg-slate-900 border border-slate-700 rounded p-2 text-white text-sm focus:border-[var(--primary)] outline-none transition-all ${readOnly ? 'opacity-50 cursor-not-allowed bg-slate-800' : 'hover:border-slate-600'}`}
         />
     </div>
 );

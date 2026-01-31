@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { AppState, Patient, User, Note, Anthropometry, ClinicalHistory, Plan, LabResult, Adherence } from './types';
+import { AppState, Patient, User, Note, Anthropometry, ClinicalHistory, Plan, LabResult, Adherence, ThemeConfig } from './types';
 import { format } from 'date-fns';
 
 // Seed Data
@@ -96,12 +96,21 @@ const SEED_PATIENTS: Patient[] = [
   }
 ];
 
+const DEFAULT_THEME: ThemeConfig = {
+    appBg: '#020617', // slate-950
+    cardBg: '#0f172a', // slate-900
+    textColor: '#f1f5f9', // slate-100
+    primaryColor: '#2563eb', // blue-600
+    fontFamily: "'Inter', sans-serif"
+};
+
 interface NutriContextType extends AppState {
   login: (email: string, pass: string) => boolean;
   logout: () => void;
   addPatient: (p: Patient) => void;
   updatePatient: (id: string, data: Partial<Patient>) => void;
   deletePatient: (id: string) => void;
+  updateTheme: (t: ThemeConfig) => void;
   refresh: () => void;
 }
 
@@ -111,12 +120,14 @@ export const NutriProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [theme, setTheme] = useState<ThemeConfig>(DEFAULT_THEME);
 
   // Load from LS
   useEffect(() => {
     const lsUsers = localStorage.getItem('nutri_users');
     const lsPatients = localStorage.getItem('nutri_patients');
     const lsSession = localStorage.getItem('nutri_session');
+    const lsTheme = localStorage.getItem('nutri_theme');
 
     if (lsUsers) setUsers(JSON.parse(lsUsers));
     else {
@@ -131,7 +142,19 @@ export const NutriProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     if (lsSession) setCurrentUser(JSON.parse(lsSession));
+
+    if (lsTheme) setTheme(JSON.parse(lsTheme));
   }, []);
+
+  // Apply Theme Effect
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--app-bg', theme.appBg);
+    root.style.setProperty('--card-bg', theme.cardBg);
+    root.style.setProperty('--text-main', theme.textColor);
+    root.style.setProperty('--primary', theme.primaryColor);
+    root.style.setProperty('--font-family', theme.fontFamily);
+  }, [theme]);
 
   const savePatients = (newPatients: Patient[]) => {
     setPatients(newPatients);
@@ -168,12 +191,17 @@ export const NutriProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     savePatients(updated);
   };
 
+  const updateTheme = (newTheme: ThemeConfig) => {
+      setTheme(newTheme);
+      localStorage.setItem('nutri_theme', JSON.stringify(newTheme));
+  };
+
   const refresh = () => {
       // Force re-read if needed, mainly mainly handled by state
   }
 
   return (
-    <NutriContext.Provider value={{ currentUser, users, patients, login, logout, addPatient, updatePatient, deletePatient, refresh }}>
+    <NutriContext.Provider value={{ currentUser, users, patients, theme, login, logout, addPatient, updatePatient, deletePatient, updateTheme, refresh }}>
       {children}
     </NutriContext.Provider>
   );
